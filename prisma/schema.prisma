@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model booking_status_history {
+  id          Int                                 @id @default(autoincrement())
+  booking_id  String                              @db.Char(36)
+  from_status booking_status_history_from_status?
+  to_status   booking_status_history_to_status
+  changed_by  String                              @db.Char(36)
+  note        String?                             @db.VarChar(255)
+  createdAt   DateTime                            @default(now()) @db.Timestamp(0)
+  bookings    bookings                            @relation(fields: [booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "booking_status_history_ibfk_1")
+  users       users                               @relation(fields: [changed_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "booking_status_history_ibfk_2")
+
+  @@index([booking_id], map: "booking_id")
+  @@index([changed_by], map: "changed_by")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model bookings {
+  id                     String                   @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  user_id                String                   @db.Char(36)
+  ticket_category_id     String                   @db.Char(36)
+  voucher_id             String?                  @db.Char(36)
+  idempotency_key        String                   @unique(map: "idempotency_key") @db.VarChar(100)
+  quantity               Int
+  total_price            Decimal                  @db.Decimal(12, 2)
+  discount_amount        Decimal                  @default(0.00) @db.Decimal(12, 2)
+  status                 bookings_status          @default(PENDING)
+  deletedBy              String?                  @db.Char(36)
+  isDeleted              Boolean                  @default(false)
+  deletedAt              DateTime?                @db.Timestamp(0)
+  createdAt              DateTime                 @default(now()) @db.Timestamp(0)
+  updatedAt              DateTime                 @default(now()) @db.Timestamp(0)
+  booking_status_history booking_status_history[]
+  users                  users                    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "bookings_ibfk_1")
+  ticket_categories      ticket_categories        @relation(fields: [ticket_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "bookings_ibfk_2")
+  vouchers               vouchers?                @relation(fields: [voucher_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "bookings_ibfk_3")
+
+  @@index([ticket_category_id], map: "ticket_category_id")
+  @@index([user_id], map: "user_id")
+  @@index([voucher_id], map: "voucher_id")
+}
+
+model concerts {
+  id                String              @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  title             String              @db.VarChar(255)
+  venue             String              @db.VarChar(255)
+  event_date        DateTime            @db.DateTime(0)
+  status            concerts_status     @default(DRAFT)
+  created_by        String              @db.Char(36)
+  deletedBy         String?             @db.Char(36)
+  isDeleted         Boolean             @default(false)
+  deletedAt         DateTime?           @db.Timestamp(0)
+  createdAt         DateTime            @default(now()) @db.Timestamp(0)
+  updatedAt         DateTime            @default(now()) @db.Timestamp(0)
+  users             users               @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "concerts_ibfk_1")
+  ticket_categories ticket_categories[]
+
+  @@index([created_by], map: "created_by")
+}
+
+model permissions {
+  id               Int                @id @default(autoincrement())
+  action           String             @db.VarChar(50)
+  resource         String             @db.VarChar(50)
+  createdAt        DateTime?          @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime?          @default(now()) @db.Timestamp(0)
+  role_permissions role_permissions[]
+
+  @@unique([action, resource], map: "unique_permission")
+}
+
+model role_permissions {
+  loai_nguoi_dung String      @db.VarChar(50)
+  permissionId    Int
+  roles           roles       @relation(fields: [loai_nguoi_dung], references: [loai_nguoi_dung], onDelete: Cascade, onUpdate: NoAction, map: "role_permissions_ibfk_1")
+  permissions     permissions @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_permissions_ibfk_2")
+
+  @@id([loai_nguoi_dung, permissionId])
+  @@index([permissionId], map: "permissionId")
+}
+
+model roles {
+  loai_nguoi_dung  String             @id @db.VarChar(50)
+  ten_loai         String             @unique(map: "ten_loai") @db.VarChar(50)
+  createdAt        DateTime?          @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime?          @default(now()) @db.Timestamp(0)
+  role_permissions role_permissions[]
+  users            users[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ticket_categories {
+  id                 String     @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  concert_id         String     @db.Char(36)
+  name               String     @db.VarChar(100)
+  price              Decimal    @db.Decimal(12, 2)
+  total_quantity     Int
+  available_quantity Int
+  deletedBy          String?    @db.Char(36)
+  isDeleted          Boolean    @default(false)
+  deletedAt          DateTime?  @db.Timestamp(0)
+  createdAt          DateTime   @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime   @default(now()) @db.Timestamp(0)
+  bookings           bookings[]
+  concerts           concerts   @relation(fields: [concert_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ticket_categories_ibfk_1")
+
+  @@index([concert_id], map: "concert_id")
+}
+
+model users {
+  id                     String                   @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  email                  String                   @unique(map: "email") @db.VarChar(255)
+  full_name              String                   @db.VarChar(255)
+  password_hash          String                   @db.VarChar(255)
+  role                   String                   @db.VarChar(50)
+  deletedBy              String?                  @db.Char(36)
+  isDeleted              Boolean                  @default(false)
+  deletedAt              DateTime?                @db.Timestamp(0)
+  createdAt              DateTime                 @default(now()) @db.Timestamp(0)
+  updatedAt              DateTime                 @default(now()) @db.Timestamp(0)
+  booking_status_history booking_status_history[]
+  bookings               bookings[]
+  concerts               concerts[]
+  roles                  roles                    @relation(fields: [role], references: [loai_nguoi_dung], onDelete: NoAction, onUpdate: NoAction, map: "users_ibfk_1")
+  vouchers               vouchers[]
+
+  @@index([role], map: "role")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model vouchers {
+  id             String                 @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  code           String                 @unique(map: "code") @db.VarChar(100)
+  discount_type  vouchers_discount_type
+  discount_value Decimal                @db.Decimal(12, 2)
+  max_usage      Int
+  used_count     Int                    @default(0)
+  expired_at     DateTime               @db.DateTime(0)
+  is_active      Boolean                @default(true)
+  created_by     String                 @db.Char(36)
+  deletedBy      String?                @db.Char(36)
+  isDeleted      Boolean                @default(false)
+  deletedAt      DateTime?              @db.Timestamp(0)
+  createdAt      DateTime               @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime               @default(now()) @db.Timestamp(0)
+  bookings       bookings[]
+  users          users                  @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "vouchers_ibfk_1")
+
+  @@index([created_by], map: "created_by")
+}
+
+enum booking_status_history_from_status {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum vouchers_discount_type {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum booking_status_history_to_status {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum concerts_status {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum bookings_status {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
