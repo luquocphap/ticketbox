@@ -9,9 +9,10 @@ import { ProtectGuard } from './common/guards/protect.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ResponseSuccessInterceptor } from './common/interceptors/success-response.interceptor';
 import { PermissionGuard } from './common/guards/permission.guard';
+import { ConcertModule } from './modules-api/concert/concert.module';
 
 @Module({
-  imports: [TokenModule, PrismaModule],
+  imports: [TokenModule, PrismaModule, ConcertModule],
   controllers: [AppController],
   providers: [AppService,
     {
