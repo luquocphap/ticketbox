@@ -17,16 +17,16 @@
 
 ---
 
-### Auth — `/QuanLyNguoiDung`
+### Auth — `/Auth`
 
 > `AuthModule` hiện tại **NOT imported** trong `AppModule` — các routes dưới đây chưa hoạt động.
 
 | Method | Endpoint | Auth | Input | Output |
 |--------|----------|------|-------|--------|
-| GET | `/QuanLyNguoiDung/LayDanhSachLoaiNguoiDung` | Public | — | `Type[]` |
-| POST | `/QuanLyNguoiDung/register` | Public | **Body:** `RegisterDto` | `boolean` |
-| POST | `/QuanLyNguoiDung/login` | Public | **Body:** `LoginDto` | `AuthToken` |
-| POST | `/QuanLyNguoiDung/RefreshToken` | Public | **Cookie:** `accessToken`, `refreshToken` | `AuthToken` |
+| GET | `/Auth/getTypeList` | Public | — | `Type[]` |
+| POST | `/Auth/register` | Public | **Body:** `RegisterDto` | `boolean` |
+| POST | `/Auth/login` | Public | **Body:** `LoginDto` | `AuthToken` |
+| POST | `/Auth/RefreshToken` | Public | **Cookie:** `accessToken`, `refreshToken` | `AuthToken` |
 
 **DTOs:**
 
