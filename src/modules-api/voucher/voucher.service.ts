@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateVoucherDto } from './dto/create-voucher.dto';
 import { UpdateVoucherDto } from './dto/update-voucher.dto';
 import { PrismaService } from 'src/modules-system/prisma/prisma.service';
@@ -51,15 +51,15 @@ export class VoucherService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} voucher`;
-  }
+  async findOne(code: string) {
+    const voucher = await this.prisma.vouchers.findUnique({
+      where: {
+        code: code
+      }
+    })
 
-  update(id: number, updateVoucherDto: UpdateVoucherDto) {
-    return `This action updates a #${id} voucher`;
-  }
+    if (!voucher) throw new BadRequestException("Voucher does not exist");
 
-  remove(id: number) {
-    return `This action removes a #${id} voucher`;
+    return voucher;
   }
 }
