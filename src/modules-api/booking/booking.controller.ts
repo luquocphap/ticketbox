@@ -11,7 +11,7 @@ export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Post()
-  @Permission("CREATE", "CONCERT")
+  @Permission("CREATE", "BOOKING")
   create(@User() user: users, @Body() createBookingDto: CreateBookingDto) {
     return this.bookingService.createBooking(user.id, createBookingDto);
   }

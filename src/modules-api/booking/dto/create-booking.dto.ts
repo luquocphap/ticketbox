@@ -18,7 +18,7 @@ export class CreateBookingDto {
     @IsOptional()
     voucherCode?: string
 
-    @ApiProperty({ description: 'UUID v4 do client sinh, dùng để chống duplicate submit' })
+    @ApiProperty({ description: 'UUID v4 do client sinh, dùng để chống duplicate submit', example: "hdbh" })
     @IsUUID('4')
     idempotencyKey!: string
 }
