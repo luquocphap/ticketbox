@@ -11,9 +11,10 @@ import { ResponseSuccessInterceptor } from './common/interceptors/success-respon
 import { PermissionGuard } from './common/guards/permission.guard';
 import { ConcertModule } from './modules-api/concert/concert.module';
 import { VoucherModule } from './modules-api/voucher/voucher.module';
+import { BookingModule } from './modules-api/booking/booking.module';
 
 @Module({
-  imports: [TokenModule, PrismaModule, ConcertModule, VoucherModule],
+  imports: [TokenModule, PrismaModule, ConcertModule, VoucherModule, BookingModule],
   controllers: [AppController],
   providers: [AppService,
     {
