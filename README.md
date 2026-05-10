@@ -1,98 +1,486 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# TicketBox Backend — README
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Mục lục
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+1. [Tổng quan API](#1-tổng-quan-api)
+2. [Cách tạo một API mới](#2-cách-tạo-một-api-mới)
+3. [Chạy Unit Test](#3-chạy-unit-test)
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 1. Tổng quan API
 
-## Project setup
+> **Response format chuẩn** (áp dụng cho tất cả endpoints qua `ResponseSuccessInterceptor`):
+> ```json
+> { "statusCode": 200, "message": "Success", "data": { ... } }
+> ```
 
-```bash
-$ npm install
+---
+
+### Auth — `/QuanLyNguoiDung`
+
+> `AuthModule` hiện tại **NOT imported** trong `AppModule` — các routes dưới đây chưa hoạt động.
+
+| Method | Endpoint | Auth | Input | Output |
+|--------|----------|------|-------|--------|
+| GET | `/QuanLyNguoiDung/LayDanhSachLoaiNguoiDung` | Public | — | `Type[]` |
+| POST | `/QuanLyNguoiDung/register` | Public | **Body:** `RegisterDto` | `boolean` |
+| POST | `/QuanLyNguoiDung/login` | Public | **Body:** `LoginDto` | `AuthToken` |
+| POST | `/QuanLyNguoiDung/RefreshToken` | Public | **Cookie:** `accessToken`, `refreshToken` | `AuthToken` |
+
+**DTOs:**
+
+```typescript
+// RegisterDto (Body)
+{
+  email: string          // required, định dạng email
+  full_name: string      // required
+  password: string       // required, min 8 ký tự, có hoa/thường/số/ký tự đặc biệt
+}
+
+// LoginDto (Body)
+{
+  email: string          // required
+  mat_khau: string       // required, min 8 ký tự, có hoa/thường/số/ký tự đặc biệt
+}
+
+// AuthToken (Output)
+{
+  accessToken: string
+  refreshToken: string
+}
 ```
 
-## Compile and run the project
+**Services:** `AuthService` → `PrismaService`, `TokenService`
 
-```bash
-# development
-$ npm run start
+---
 
-# watch mode
-$ npm run start:dev
+### Concert — `/concert`
 
-# production mode
-$ npm run start:prod
+| Method | Endpoint | Auth | Input | Output |
+|--------|----------|------|-------|--------|
+| POST | `/concert` | `@Permission("CREATE", "CONCERT")` | **Body:** `CreateConcertDto` | `boolean` |
+| GET | `/concert` | Public | **Query:** `QueryPaginatedDto` | `PaginatedResult<Concert>` |
+| GET | `/concert/:id` | Public | **Param:** `id: string` | `Concert` |
+| PATCH | `/concert/:id` | `@Permission("UPDATE", "CONCERT")` | **Param:** `id` · **Body:** `UpdateConcertDto` | `boolean` |
+| DELETE | `/concert/:id` | `@Permission("DELETE", "CONCERT")` | **Param:** `id: string` | `boolean` |
+
+**DTOs:**
+
+```typescript
+// CreateConcertDto (Body)
+{
+  title: string          // required
+  venue: string          // required
+  event_date: string     // required, ISO date string
+}
+
+// UpdateConcertDto (Body) — tất cả optional
+{
+  title?: string
+  venue?: string
+  event_date?: string
+}
+
+// QueryPaginatedDto (Query)
+{
+  page?: number
+  pageSize?: number
+  keyWord?: string
+}
+
+// PaginatedResult<Concert> (Output)
+{
+  currentPage: number
+  count: number
+  totalPages: number
+  totalCount: number
+  items: Concert[]
+}
+
+// Concert Entity
+{
+  id: string
+  title: string
+  venue: string
+  event_date: DateTime
+  created_by: string
+  isDeleted: boolean
+  deletedBy?: string
+  createdAt: DateTime
+  updatedAt: DateTime
+}
 ```
 
-## Run tests
+**Services:** `ConcertService` → `PrismaService`
 
-```bash
-# unit tests
-$ npm run test
+---
 
-# e2e tests
-$ npm run test:e2e
+### Booking — `/booking`
 
-# test coverage
-$ npm run test:cov
+> Tất cả endpoints yêu cầu JWT token (Protected).
+
+| Method | Endpoint | Auth | Input | Output |
+|--------|----------|------|-------|--------|
+| POST | `/booking` | Protected | **Body:** `CreateBookingDto` | `Booking` |
+| GET | `/booking` | Protected | — (lấy theo user hiện tại) | `Booking[]` |
+| GET | `/booking/:id` | Protected | **Param:** `id: string` | `Booking` |
+| PATCH | `/booking/:id/status` | Protected | **Param:** `id` · **Body:** `UpdateBookingStatusDto` | `Booking` |
+
+**DTOs:**
+
+```typescript
+// CreateBookingDto (Body)
+{
+  ticketCategoryId: string   // required
+  quantity: number           // required
+  voucherCode?: string       // optional
+  idempotencyKey: string     // required
+}
+
+// UpdateBookingStatusDto (Body)
+{
+  status: string             // required — PENDING | CONFIRMED | CANCELLED | EXPIRED
+  note?: string              // optional
+}
+
+// Booking Entity (Output)
+{
+  id: string
+  user_id: string
+  ticket_category_id: string
+  voucher_id?: string
+  idempotency_key: string
+  quantity: number
+  total_price: decimal
+  discount_amount: decimal
+  status: string             // PENDING | CONFIRMED | CANCELLED | EXPIRED
+  createdAt: DateTime
+  updatedAt: DateTime
+}
 ```
 
-## Deployment
+**Services:** `BookingService` → `PrismaService`, `InventoryService`  
+`InventoryService` xử lý reserve/release vé (dùng SELECT FOR UPDATE trong transaction).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Voucher — `/voucher`
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+| Method | Endpoint | Auth | Input | Output |
+|--------|----------|------|-------|--------|
+| POST | `/voucher` | `@Permission("CREATE", "VOUCHER")` | **Body:** `CreateVoucherDto` | `boolean` |
+| GET | `/voucher` | `@Permission("READ", "VOUCHER")` | **Query:** `VoucherPaginatedDto` | `PaginatedResult<Voucher>` |
+| GET | `/voucher/:id` | Public | **Param:** `code: string` | `Voucher` |
+
+**DTOs:**
+
+```typescript
+// CreateVoucherDto (Body)
+{
+  code: string               // required, unique
+  discount_type: string      // required — PERCENTAGE | FIXED
+  discount_value: decimal    // required
+  expired_at: DateTime       // required
+  max_usage: number          // required
+}
+
+// VoucherPaginatedDto (Query)
+{
+  page?: number
+  pageSize?: number
+  // + các filter fields khác
+}
+
+// Voucher Entity (Output)
+{
+  id: string
+  code: string
+  discount_type: string      // PERCENTAGE | FIXED
+  discount_value: decimal
+  expired_at: DateTime
+  max_usage: number
+  used_count: number
+  is_active: boolean
+  created_by: string
+  createdAt: DateTime
+  updatedAt: DateTime
+}
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+**Services:** `VoucherService` → `PrismaService`
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## 2. Cách tạo một API mới
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Tuân theo convention NestJS module-based. Dưới đây là các bước đầy đủ, lấy ví dụ tạo module `notification`.
 
-## Support
+### Bước 1 — Tạo cấu trúc thư mục
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```
+src/modules-api/notification/
+├── notification.module.ts
+├── notification.controller.ts
+├── notification.service.ts
+└── dto/
+    ├── create-notification.dto.ts
+    └── update-notification.dto.ts
+```
 
-## Stay in touch
+### Bước 2 — Định nghĩa DTO
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```typescript
+// dto/create-notification.dto.ts
+import { IsString, IsNotEmpty } from 'class-validator';
 
-## License
+export class CreateNotificationDto {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+}
+```
+
+### Bước 3 — Viết Service
+
+```typescript
+// notification.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '@/modules-system/prisma/prisma.service';
+import { CreateNotificationDto } from './dto/create-notification.dto';
+
+@Injectable()
+export class NotificationService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(userId: string, dto: CreateNotificationDto): Promise<boolean> {
+    await this.prisma.notifications.create({
+      data: { ...dto, created_by: userId },
+    });
+    return true;
+  }
+
+  async findOne(id: string) {
+    const item = await this.prisma.notifications.findUnique({ where: { id } });
+    if (!item) throw new NotFoundException('Notification not found');
+    return item;
+  }
+}
+```
+
+### Bước 4 — Viết Controller
+
+```typescript
+// notification.controller.ts
+import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import { NotificationService } from './notification.service';
+import { CreateNotificationDto } from './dto/create-notification.dto';
+import { Public } from '@/common/decorators/public.decorator';
+import { Permission } from '@/common/decorators/permission.decorator';
+import { User } from '@/common/decorators/user.decorator';
+import { users } from '@prisma/client';
+
+@Controller('notification')
+export class NotificationController {
+  constructor(private readonly notificationService: NotificationService) {}
+
+  // Protected + Permission
+  @Post()
+  @Permission('CREATE', 'NOTIFICATION')
+  create(
+    @User() user: users,
+    @Body() dto: CreateNotificationDto,
+  ) {
+    return this.notificationService.create(user.id, dto);
+  }
+
+  // Public
+  @Get(':id')
+  @Public()
+  findOne(@Param('id') id: string) {
+    return this.notificationService.findOne(id);
+  }
+}
+```
+
+### Bước 5 — Tạo Module
+
+```typescript
+// notification.module.ts
+import { Module } from '@nestjs/common';
+import { NotificationController } from './notification.controller';
+import { NotificationService } from './notification.service';
+
+@Module({
+  controllers: [NotificationController],
+  providers: [NotificationService],
+})
+export class NotificationModule {}
+```
+
+### Bước 6 — Import vào AppModule
+
+```typescript
+// app.module.ts
+import { NotificationModule } from './modules-api/notification/notification.module';
+
+@Module({
+  imports: [
+    TokenModule,
+    PrismaModule,
+    ConcertModule,
+    VoucherModule,
+    BookingModule,
+    NotificationModule, // ← thêm vào đây
+  ],
+  // ...
+})
+export class AppModule {}
+```
+
+### Checklist khi tạo API mới
+
+- [ ] Tạo DTO với validation (`class-validator`)
+- [ ] Service inject `PrismaService`, xử lý logic và throw exception chuẩn
+- [ ] Controller dùng đúng decorator: `@Public()` hoặc `@Permission(action, resource)`
+- [ ] Dùng `@User()` để lấy user hiện tại thay vì parse token thủ công
+- [ ] Import module vào `AppModule`
+- [ ] Viết unit test cho service mới (xem phần 3)
+
+### Decorators tham khảo
+
+```typescript
+@Public()                        // Bypass JWT guard — không cần đăng nhập
+@Permission("CREATE", "RESOURCE") // Yêu cầu permission cụ thể
+@User()                          // Inject user object từ request (sau khi đã auth)
+@Role("Admin")                   // Kiểm tra role (optional)
+```
+
+---
+
+## 3. Chạy Unit Test
+
+### Các file test hiện có
+
+```
+src/modules-api/
+├── auth/auth.service.spec.ts
+├── concert/concert.service.spec.ts
+├── booking/
+│   ├── booking.service.spec.ts
+│   └── inventory.service.spec.ts
+└── voucher/voucher.service.spec.ts
+```
+
+### Lệnh chạy test
+
+```bash
+# Chạy tất cả tests
+npm run test
+
+# Chạy test của một file cụ thể
+npm run test -- auth.service.spec.ts
+npm run test -- concert.service.spec.ts
+npm run test -- booking.service.spec.ts
+npm run test -- inventory.service.spec.ts
+npm run test -- voucher.service.spec.ts
+
+# Chạy với coverage report
+npm run test:cov
+
+# Chạy ở watch mode (tự reload khi code thay đổi)
+npm run test:watch
+```
+
+### Cấu trúc một unit test
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { MyService } from './my.service';
+import { PrismaService } from '@/modules-system/prisma/prisma.service';
+
+describe('MyService', () => {
+  let service: MyService;
+  let prisma: jest.Mocked<PrismaService>;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        MyService,
+        {
+          provide: PrismaService,
+          useValue: {
+            myTable: {
+              findUnique: jest.fn(),
+              create: jest.fn(),
+            },
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<MyService>(MyService);
+    prisma = module.get(PrismaService);
+  });
+
+  describe('create', () => {
+    it('should create successfully', async () => {
+      // Arrange
+      prisma.myTable.create.mockResolvedValue({ id: '1', title: 'Test' });
+
+      // Act
+      const result = await service.create('user-id', { title: 'Test' });
+
+      // Assert
+      expect(result).toBe(true);
+      expect(prisma.myTable.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ title: 'Test' }) })
+      );
+    });
+
+    it('should throw when resource not found', async () => {
+      prisma.myTable.findUnique.mockResolvedValue(null);
+      await expect(service.findOne('invalid-id')).rejects.toThrow('not found');
+    });
+  });
+});
+```
+
+### Coverage hiện tại
+
+| Service | Test cases |
+|---------|-----------|
+| `AuthService` | register (success + duplicate email), login (success + user not found), getTypeList |
+| `ConcertService` | create, findAll (paginated), findOne (success + not found), update, remove (soft delete) |
+| `BookingService` | createBooking (success + category not found), getBookingById (success + not found), getMyBookings, updateStatus |
+| `InventoryService` | reserveTickets (success + not enough tickets + category not found), releaseTickets |
+| `VoucherService` | create, findAll (paginated), findOne (success + not found) |
+
+### Best practices
+
+**Đặt tên test rõ ràng** — dùng pattern `should [do X] when [condition Y]`
+
+**Chỉ một assertion chính** mỗi test case — dễ debug khi fail
+
+**Mock toàn bộ dependencies** — không gọi database hay external service thật
+
+**Luôn test cả error cases** — không chỉ happy path
+
+**AAA pattern** — Arrange → Act → Assert, phân tách rõ ràng
+
+### Troubleshooting
+
+```bash
+# Lỗi "Cannot find module" → kiểm tra paths trong tsconfig.json và jest config
+npm install
+
+# Xóa cache test nếu có lỗi lạ
+npm run test -- --clearCache
+
+# Test bị timeout → thêm vào đầu file test
+jest.setTimeout(10000)
+```

@@ -2,11 +2,11 @@ import {
     Injectable, NestInterceptor, ExecutionContext,
     CallHandler, Logger
 } from '@nestjs/common'
-import { Observable, tap } from 'rxjs'
 import { InjectRedis } from '@nestjs-modules/ioredis'
+import { Observable, tap, of } from 'rxjs'
 import Redis from 'ioredis'
 
-const IDEMPOTENCY_TTL = 60 * 60 * 24 // 24h
+const TTL = 60 * 60 * 24
 
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
@@ -16,23 +16,22 @@ export class IdempotencyInterceptor implements NestInterceptor {
 
     async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
         const request = context.switchToHttp().getRequest()
-        const idempotencyKey = request.headers['idempotency-key']
+        const key = request.body?.idempotencyKey
 
-        if (!idempotencyKey) return next.handle()
+        if (!key) return next.handle()
 
-        const redisKey = `idempotency:${idempotencyKey}`
+        const redisKey = `idempotency:${key}`
         const cached = await this.redis.get(redisKey)
 
         if (cached) {
-            this.logger.log(`Idempotency hit: ${idempotencyKey}`)
-            const response = context.switchToHttp().getResponse()
-            response.status(200).json(JSON.parse(cached))
-            return new Observable(subscriber => subscriber.complete())
+            this.logger.log(`Idempotency hit: ${key}`)
+            return of(JSON.parse(cached))
         }
 
         return next.handle().pipe(
-            tap(async (responseBody) => {
-                await this.redis.set(redisKey, JSON.stringify(responseBody), 'EX', IDEMPOTENCY_TTL)
+            tap(async (body) => {
+                await this.redis.set(redisKey, JSON.stringify(body), 'EX', TTL)
+                this.logger.log(`Idempotency stored: ${key}`)
             })
         )
     }
