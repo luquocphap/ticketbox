@@ -12,9 +12,10 @@ import { PermissionGuard } from './common/guards/permission.guard';
 import { ConcertModule } from './modules-api/concert/concert.module';
 import { VoucherModule } from './modules-api/voucher/voucher.module';
 import { BookingModule } from './modules-api/booking/booking.module';
+import { AuthModule } from './modules-api/auth/auth.module';
 
 @Module({
-  imports: [TokenModule, PrismaModule, ConcertModule, VoucherModule, BookingModule],
+  imports: [TokenModule, PrismaModule, AuthModule, ConcertModule, VoucherModule, BookingModule],
   controllers: [AppController],
   providers: [AppService,
     {
