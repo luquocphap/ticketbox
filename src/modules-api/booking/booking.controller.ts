@@ -4,12 +4,14 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import type { users } from '@prisma/client';
 import { User } from 'src/common/decorators/user.decorator';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
+import { Permission } from 'src/common/decorators/permission.decorator';
 
 @Controller('booking')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Post()
+  @Permission("CREATE", "CONCERT")
   create(@User() user: users, @Body() createBookingDto: CreateBookingDto) {
     return this.bookingService.createBooking(user.id, createBookingDto);
   }

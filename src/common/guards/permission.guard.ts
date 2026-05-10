@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { PrismaService } from 'src/modules-system/prisma/prisma.service';
 import { TokenService } from 'src/modules-system/token/token.service';
 import { PERMISSION_KEY } from '../decorators/permission.decorator';
+import { users } from '@prisma/client';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -19,7 +20,7 @@ export class PermissionGuard implements CanActivate {
 
     console.log({permission});
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const user: users = request.user;
     console.log(user);
     const query = request.query;
 
@@ -29,7 +30,7 @@ export class PermissionGuard implements CanActivate {
 
     const isPermitted = await this.prisma.role_permissions.findFirst({
       where: {
-        loai_nguoi_dung: user.loai_nguoi_dung,
+        loai_nguoi_dung: user.role,
         permissions: {
           action: action,
           resource: resource
@@ -37,7 +38,7 @@ export class PermissionGuard implements CanActivate {
       }
     })
 
-    if (resource === "USER PROFILE" && query.taiKhoan && user.tai_khoan == query.taiKhoan){
+    if (resource === "USER PROFILE" && query.id && user.id == query.id){
       return true
     }
 

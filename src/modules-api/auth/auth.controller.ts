@@ -7,11 +7,11 @@ import { Permission } from "src/common/decorators/permission.decorator";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 
-@Controller('QuanLyNguoiDung')
+@Controller('Auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
-    @Get('/LayDanhSachLoaiNguoiDung')
+    @Get('/getTypeList')
     @Public()
     getTypeList(){
         return this.authService.getTypeList();

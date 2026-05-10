@@ -50,7 +50,7 @@ export class AuthService {
     }
 
     async login(body: LoginDto){
-        const { email, mat_khau } = body;
+        const { email, password } = body;
 
         const userExist = await this.prisma.users.findUnique({
             where: {
@@ -65,7 +65,7 @@ export class AuthService {
             throw new BadRequestException("Users have not registered");
         }
 
-        const isPassword = bcrypt.compare(mat_khau, userExist.password_hash);
+        const isPassword = bcrypt.compare(password, userExist.password_hash);
 
         if (!isPassword){
             throw new BadRequestException("invalid password")

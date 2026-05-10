@@ -33,7 +33,10 @@ export class ConcertService {
         })
 
         const totalConcertPromise = this.prisma.concerts.count({
-            where: where
+            where: {
+              ...where,
+              isDeleted: false
+            }
         })
 
         const [users, totalConcert] = await Promise.all([usersPromise, totalConcertPromise]);
@@ -52,7 +55,8 @@ export class ConcertService {
   async findOne(id: string) {
     const concert = await this.prisma.concerts.findUnique({
       where: {
-        id: id
+        id: id,
+        isDeleted: false,
       }
     });
 
@@ -103,7 +107,8 @@ export class ConcertService {
 
       data: {
         isDeleted: true,
-        deletedBy: userId
+        deletedBy: userId,
+        deletedAt: new Date()
       }
     })
 

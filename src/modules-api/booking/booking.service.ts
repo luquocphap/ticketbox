@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common'
 import { CreateBookingDto } from './dto/create-booking.dto'
 import { PrismaService } from 'src/modules-system/prisma/prisma.service'
-import { InventoryService } from './inventory.service'
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto'
+import { InventoryService } from './inventory.service'
 
 @Injectable()
 export class BookingService {
@@ -132,8 +132,8 @@ export class BookingService {
             where: { id },
             include: {
                 ticket_categories: true,
-                voucher: true,
-                status_history: { orderBy: { createdAt: 'asc' } }
+                vouchers: true,
+                booking_status_history: { orderBy: { createdAt: 'asc' } }
             }
         })
 

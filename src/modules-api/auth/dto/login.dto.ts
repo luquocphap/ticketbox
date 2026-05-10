@@ -4,7 +4,7 @@ import { IsEmail, IsNotEmpty, Matches, MinLength } from "class-validator";
 export class LoginDto{
     @IsNotEmpty()
     @IsEmail(undefined, { message: "Invalid Email" })
-    @ApiProperty({ example: "phap@gmail.com" })
+    @ApiProperty({ example: "customer1@gmail.com" })
     email!: string;
 
     @IsNotEmpty()
@@ -16,6 +16,6 @@ export class LoginDto{
             'Mật khẩu phải có chữ hoa, chữ thường, số và ký tự đặc biệt',
         },
     )
-    @ApiProperty({ example: "Password123!" })
-    mat_khau!: string;
+    @ApiProperty({ example: "Password@123" })
+    password!: string;
 }
