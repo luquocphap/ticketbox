@@ -23,8 +23,9 @@ export class VoucherController {
     return this.voucherService.findAll(query);
   }
 
-  @Get(':id')
+  @Get(':code')
   findOne(@Param('code') code: string) {
+    console.log({code})
     return this.voucherService.findOne(code);
   }
 }

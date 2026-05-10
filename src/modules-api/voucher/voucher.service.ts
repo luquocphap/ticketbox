@@ -31,11 +31,14 @@ export class VoucherService {
     const vouchersPromise = this.prisma.vouchers.findMany({
         where: where,
         skip: index,
-        take: pageSize,
+        take: pageSize
     })
 
-    const totalVoucherPromise = this.prisma.concerts.count({
-        where: where
+    const totalVoucherPromise = this.prisma.vouchers.count({
+        where: {
+          ...where,
+          isDeleted: false
+        }
     })
 
     const [vouchers, totalVoucher] = await Promise.all([vouchersPromise, totalVoucherPromise]);
